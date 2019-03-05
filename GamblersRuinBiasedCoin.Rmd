@@ -1,0 +1,59 @@
+---
+title: "GamlbersRuinBiasedCoin"
+author: "Chris Kalra"
+date: "3/4/2019"
+output: html_document
+---
+
+```{r}
+P =       matrix(c( 1,  0,  0,  0,  0,  0,                      
+                    .55,  0,  .45,  0,  0,  0,                      
+                    0,  .55,  0,  .45,  0,  0,                      
+                    0,  0,  .55,  0,  .45,  0,                     
+                    0,  0,  0,  .55,  0,  .45,                      
+                    0,  0,  0,  0,  0,  1),  nrow=6,  byrow=T) 
+P
+
+# Solving via linear algebra
+Q = P[2:5, 2:5];  N = P[2:5,  c(1, 6)]  # Q is 4x4;  N is 4x2
+I = diag(1, 4) 
+M = solve(I-Q);  M               # Here 'solve' means find inverse
+rowSums(M)
+M%*%N                           # Columns of M%*%N refer to states 0 and 5
+
+# Therefore P{A ruined|A starts w/ $3} = 0.5219505
+
+P2 = P %*% P; P4 = P2 %*% P2; P8 = P4 %*% P4; P16 = P8 %*% P8
+P32=P16%*%P16; P64=P32%*%P32 ; P64
+
+#[4,1] is estimating P{A ruined|A starts w/ $3} = P{A ends up with $0|A starts w/ $3}
+# which has an estimate of 0.5219498
+```
+
+
+(A) begins with 3 dollars and (B) with 2 dollars. P(heads) = 0.45 and thus P(tails) = 0.55.
+
+
+```{r}
+ set.seed(1027);  m = 1000;  t = a = numeric(m) 
+for (i in 1:m) 
+{
+  x = cs = 3                  # in state 3 at step 1,  cs = Current State
+  while ((cs > 0) & (cs < 5))        # while in a transient state
+  {   cs=runif(1, 0, 1)
+      if (cs < 0.55)
+        {cs == cs - 1}
+      else (cs > .55)
+        {cs == cs + 1}
+      x = c(x,  cs)                  # x is record of all states visited
+  }
+  t[i] = length(x) - 1       # t is steps before absorption = rolls of die = number of turns                                in the game
+  a[i] = cs
+}
+mean(t);  mean(t >= 10);  mean(a==0);  mean(a==5)
+```
+
+mean(t) is the mean number of tosses until absorption
+ 
+mean(t>=10) is the proportion of the games that lasted at least 10 tosses
+
